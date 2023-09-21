@@ -101,8 +101,8 @@ Request Body:
 Response Body:
 ```json
 {
-  "productId": "string"
-  "userId": "string"
+  "productId": "string",
+  "userId": "string",
   "name": "string",
   "productDescription": "string",
   "price": "numeric",
