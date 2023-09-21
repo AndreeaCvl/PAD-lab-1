@@ -69,6 +69,24 @@ Response Body:
   "accessToken": "string"
 }
 ```
+
+**POST /users/wishlist/add** - add product to wishlist
+Request Body:
+```json
+{
+  "userId": "string",
+  "productId": "string"
+}
+```
+Response body
+```json
+{
+  "message": "Product added to the wishlist successfully."
+}
+```
+
+
+
 ### Product catalog microservice
 **POST /products** - add product for sale
 Request Body:
@@ -88,6 +106,7 @@ Response Body:
   "name": "string",
   "productDescription": "string",
   "price": "numeric",
+  "favorites": "numeric",
   "timestamp": "string"
 }
 ```
@@ -115,6 +134,7 @@ Response Body:
     "name": "string",
     "productDescription": "string",
     "price": "numeric",
+    "favorites": "numeric",
     "timestamp": "string"
   },
   {
@@ -123,6 +143,7 @@ Response Body:
     "name": "string",
     "productDescription": "string",
     "price": "numeric",
+    "favorites": "numeric",
     "timestamp": "string"
   },
   // More matching products can be included here
