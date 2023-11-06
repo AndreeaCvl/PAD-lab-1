@@ -30,6 +30,7 @@ class FavDatabaseHandler:
         cur.execute('SELECT favs FROM users WHERE user_id = %s', (user_id,))
         favorites = cur.fetchone()
         cur.close()
+        print(favorites)
         return favorites[0] if favorites else None
 
     def add_to_favorites(self, user_id, product_id):
@@ -40,12 +41,12 @@ class FavDatabaseHandler:
                 pass
             else:
                 current_favorites.append(product_id)
-
         else:
             current_favorites = [product_id]
 
         cur = self.conn.cursor()
-        cur.execute('UPDATE users SET favs = %s WHERE user_id = %s', (current_favorites, user_id))
+        cur.execute('INSERT INTO users (user_id, favs) VALUES (%s, %s) ON CONFLICT (user_id) DO UPDATE SET favs = %s',
+                    (user_id, current_favorites, current_favorites))
         self.conn.commit()
         cur.close()
 

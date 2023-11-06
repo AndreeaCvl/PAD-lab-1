@@ -16,16 +16,6 @@ def status():
     return jsonify({"status": "ok", "service": "favorites"}), 200
 
 
-@app.route('/users/<user_id>/favorites', methods=['GET'])
-def see_favorites_by_user_id(user_id):
-    favorites = db_handler.get_favorites_by_user_id(user_id)
-    if favorites:
-        formatted_favorites = ', '.join(favorites)
-        return f'Favorites for User ID {user_id}: {formatted_favorites}'
-    else:
-        return f'The user with ID {user_id} has added no favorites yes'
-
-
 @app.route('/users/<user_id>/favorites/add', methods=['POST'])
 def add_to_favorites(user_id):
     try:
@@ -40,7 +30,10 @@ def add_to_favorites(user_id):
 
             if response.status_code == 200:
                 return jsonify({"message": f"Product {product_id} added to favorites for user {user_id}"}), 201
+                print(" notified products service")
+
             else:
+                print("Failed to notify products service")
                 return jsonify({"error": "Failed to notify products service"}), 500
 
             #return jsonify({'message': f'Product {product_id} added to favorites for User ID {user_id}'}), 200
@@ -48,7 +41,18 @@ def add_to_favorites(user_id):
             return jsonify({'error': 'Product ID is required'}), 400
 
     except Exception as e:
+        print('exception')
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/users/<user_id>/favorites', methods=['GET'])
+def see_favorites_by_user_id(user_id):
+    favorites = db_handler.get_favorites_by_user_id(user_id)
+    if favorites:
+        formatted_favorites = ', '.join(favorites)
+        return f'Favorites for User ID {user_id}: {formatted_favorites}'
+    else:
+        return f'The user with ID {user_id} has added no favorites yes'
 
 
 if __name__ == '__main__':

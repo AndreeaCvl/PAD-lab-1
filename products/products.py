@@ -1,3 +1,5 @@
+import uuid
+
 import requests
 from flask import request, jsonify, Flask
 from products_db import ProductsDatabaseHandler
@@ -16,7 +18,7 @@ def status():
 @app.route('/add_product', methods=['POST'])
 def add_product():
     data = request.get_json()
-    product_id = data.get('product_id')
+    product_id = str(uuid.uuid4())  # Convert UUID object to string for storage
     user_id = data.get('user_id')
     product_name = data.get('product_name')
     product_description = data.get('product_description')
@@ -24,7 +26,8 @@ def add_product():
 
     products_handler.add_product(product_id, user_id, product_name, product_description, price)
 
-    return jsonify({"message": "Product added successfully"}), 201
+    #return jsonify({"message": f"{product_id}"}), 201
+    return product_id, 201
 
 
 @app.route('/products/<string:product_id>', methods=['DELETE'])
@@ -46,6 +49,16 @@ def search_products():
         return jsonify(products), 200
     else:
         return jsonify({"error": f"Error occurred while searching for products with name '{product_name}'"}), 500
+
+
+@app.route('/products', methods=['GET'])
+def search_all_products():
+    products = products_handler.fetch_all_products()
+
+    if products is not None:
+        return jsonify(products), 200
+    else:
+        return jsonify({"error": f"Error occurred while fetching products"}), 500
 
 
 @app.route('/product_to_favorite', methods=['POST'])
