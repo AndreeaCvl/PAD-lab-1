@@ -36,7 +36,7 @@ func CreateProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send a POST request to the /add_product endpoint on localhost:5001
-	resp, err := http.Post("http://favorites:5001/add_product", "application/json", bytes.NewBuffer(responseJSON))
+	resp, err := http.Post("http://localhost:5001/add_product", "application/json", bytes.NewBuffer(responseJSON))
 	if err != nil {
 		log.Fatal(err)
 	}
