@@ -1,7 +1,7 @@
 # Digital market for stationery materials
 
 ##System architecture diagram - lab 2
-![System architecture diagram](https://github.com/AndreeaCvl/PAD-lab-1/blob/main/system_diagram_v2.png)
+![System architecture diagram](https://github.com/AndreeaCvl/PAD-lab-1/blob/main/system_diagram_v2.jpg)
 
 
 ## Application Suitability
