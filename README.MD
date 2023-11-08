@@ -1,12 +1,16 @@
 # Digital market for stationery materials
 
+##System architecture diagram - lab 2
+![System architecture diagram](https://github.com/AndreeaCvl/PAD-lab-1/blob/main/system_diagram_v2.png)
+
+
 ## Application Suitability
 The app is suitable for this project because:
 - as the marketplace grows, specific services which require more resources can be scaled. Such as payment processing, inventory management or search functionality. 
 - Each service can be developed and tested independently.
 - The fault of one microservice, let's say payment, won't stop the entire marketplace from working.
 - Each resource can be optimized for its specific workload, 
-There are a lot of similar apps using microeservices. Any online marketplace such as Amazon or Ebay, or if talking about stationery materials - Etsy may be a more suitable example.
+There are a lot of similar apps using microservices. Any online marketplace such as Amazon or Ebay, or if talking about stationery materials - Etsy may be a more suitable example.
 
 ![System architecture diagram](https://github.com/AndreeaCvl/PAD-lab-1/blob/main/system_diagram.png)
 
@@ -24,8 +28,8 @@ will encapsulate functionalities such as product management (creating and modify
 1. API Gateway - Golang.
 API Gateways usually need to handle a large number of incoming requests and route them, and Go is a good choice ecause of its performance. It is also designed for concurrent programming.
 
-2. User microservice - Python with Flask.
-This will allow user registration and authentication and will manage the roles (seller/buyer). Flask aligns well with the microservices architecture and Python has strong database support.
+2. Favorites microservice - Python with Flask.
+This will allow adding products to favorites and to view a user's favorite products. Flask aligns well with the microservices architecture and Python has strong database support.
 
 3. Product Catalog Microservice - Python with Flask.
 This will allow creating new products, deleting products by the seller, and searching for products by the users. Flask aligns well with the microservices architecture and Python has strong database support.
@@ -35,96 +39,28 @@ They follow the standard HTTP methods, are compatible with the web infrastructur
 
 ## Data management
 ### User microservice
-**POST /users/register** - register
+**POST /add_product** - Adding a new product
 Request Body:
 ```json
 {
-  "username": "string",
-  "password": "string",
-  "role": "string"
+    "user_id": "5",
+    "product_name": "product name",
+    "product_description": "product description",
+    "price": 7
 }
 ```
 Response Body:
 ```json
 {
-  "userId": "string",
-  "username": "string",
-  "role": "string"
+    "product_id": "e75e82fe-7971-4ca6-94c8-a93e131decf7",
+    "user_id": "5",
+    "product_name": "product name",
+    "product_description": "product description",
+    "price": 7
 }
 ```
-**POST /users/login** - login
-Request Body:
-```json
-{
-  "username": "string",
-  "password": "string",
-}
-```
-Response Body:
-```json
-{
-  "userId": "string",
-  "username": "string",
-  "role": "string",
-  "accessToken": "string"
-}
-```
-
-**POST /users/wishlist/add** - add product to wishlist
-Request Body:
-```json
-{
-  "userId": "string",
-  "productId": "string"
-}
-```
-Response body
-```json
-{
-  "message": "Product added to the wishlist successfully."
-}
-```
-
-
-
-### Product catalog microservice
-**POST /products** - add product for sale
-Request Body:
-```json
-{
-  "userId": "string",
-  "name": "string",
-  "productDescription": "string",
-  "price": "numeric"
-}
-```
-Response Body:
-```json
-{
-  "productId": "string",
-  "userId": "string",
-  "name": "string",
-  "productDescription": "string",
-  "price": "numeric",
-  "favorites": "numeric",
-  "timestamp": "string"
-}
-```
-**DELETE /products/{productId}** - delete product from sale
-Response Body:
-```json
-{
-  "message": "string"
-}
-```
-
-**GET /products/search** - search product by name
+**GET /search_products?name=<name>** - search product by name
 Query Parameters - The name of the product to search for.
-```json
-{
-  "name": "string" 
-}
-```
 Response Body:
 ```json
 [
@@ -149,5 +85,69 @@ Response Body:
   // More matching products can be included here
 ]
 ```
+**GET /search_all_products** - get all available products
+Response Body:
+```json
+[
+  {
+    "productId": "string",
+    "userId": "string",
+    "name": "string",
+    "productDescription": "string",
+    "price": "numeric",
+    "favorites": "numeric",
+    "timestamp": "string"
+  },
+  {
+    "productId": "string",
+    "userId": "string",
+    "name": "string",
+    "productDescription": "string",
+    "price": "numeric",
+    "favorites": "numeric",
+    "timestamp": "string"
+  },
+  // More matching products can be included here
+]
+```
+
+**POST /users/<user_id>/favorites/add** - add product to favorites
+Request Body:
+```json
+{
+  "productId": "string"
+}
+```
+Response body
+```json
+"Product with ID 7 <product_id> added to favorites for user ID: <user_id>"
+```
+
+**GET /users/<user_id>/favorites** - add product to favorites
+Response body
+```json
+"Favorites for User ID 6: <product_id>, <product_id>, ...."
+```
+
+**DELETE delete_product/<product_id>** - delete product from sale
+Response Body:
+```json
+"Product with ID e75e82fe-7971-4ca6-94c8-a93e131decf7 has been deleted successfully"
+```
+
+## Running the code
+To create the databases enter the command
+```docker-compose up --build``` inside the project directory.
+
+In order to run the code, please run the following files:
+```python favourites.py```,
+```python products.py ```,
+```go run main.go```.
+
+Creating docker for the whole system in progress...
+
+To test the app you can use the requests from the [Postman Collection](https://github.com/AndreeaCvl/PAD-labs/blob/main/PAD%20lab%201.postman_collection.json). Use the requests from the ```gateway``` folder.
+
+
 
 

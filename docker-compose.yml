@@ -52,17 +52,17 @@ services:
 #      - favorites-db
 #      - products-app
 
-  gateway:
-    build:
-      context: ./gateway
-      dockerfile: Dockerfile
-    ports:
-      - "8000:8000"  # Assuming your Go gateway listens on port 80
-    networks:
-      - my_network
-    #depends_on:
-     # - products-app
-     # - favorites-app
+#  gateway:
+#    build:
+#      context: ./gateway
+#      dockerfile: Dockerfile
+#    ports:
+#      - "8000:8000"  # Assuming your Go gateway listens on port 80
+#    networks:
+#      - my_network
+#    #depends_on:
+#     # - products-app
+#     # - favorites-app
 
 volumes:
   products-data:
