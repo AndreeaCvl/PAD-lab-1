@@ -1,55 +1,73 @@
-version: '3'
+version: "3"
 services:
-  postgres1:
+  products-db:
     image: postgres:16.0
+    container_name: products
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: admin
-      #POSTGRES_DB: products
+      POSTGRES_DB: products
+    volumes:
+      - products-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-    volumes:
-      - data:/var/lib/postgresql/data
+    networks:
+      - my_network
 
-  postgres2:
-    image: postgres:latest
+  favorites-db:
+    image: postgres:16.0
+    container_name: favorites
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: admin
-      #POSTGRES_DB: fav_test2
+      POSTGRES_DB: fav_test2
+    volumes:
+      - favorites-data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
-    volumes:
-      - data2:/var/lib/postgresql/data
+    networks:
+      - my_network
 
-  products:
-    build: ./products
-    ports:
-      - "5000:5000"
-    depends_on:
-      - postgres1
 
-  favorites:
-    build: ./favorites
-    ports:
-      - "5001:5001"
-    depends_on:
-      - postgres2
+#  products-app:
+#    build:
+#      context: ./products
+#      dockerfile: Dockerfile
+#    ports:
+#      - "5001:5001"  # Assuming your products Flask app listens on port 5000
+#    networks:
+#      - my_network
+#    depends_on:
+#      - products-db
+#
+#  favorites-app:
+#    build:
+#      context: ./favorites
+#      dockerfile: Dockerfile
+#    ports:
+#      - "5000:5000"  # Assuming your products Flask app listens on port 5000
+#    networks:
+#      - my_network
+#    depends_on:
+#      - favorites-db
+#      - products-app
 
   gateway:
-    build: ./gateway
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
     ports:
-      - "8000:8000"
-    depends_on:
-      - products
-      - favorites
-
-#volumes:
-#  postgres1:
-#    driver: local
-#  postgres2:
-#    driver: local
+      - "8000:8000"  # Assuming your Go gateway listens on port 80
+    networks:
+      - my_network
+    #depends_on:
+     # - products-app
+     # - favorites-app
 
 volumes:
-  data:
-  data2:
+  products-data:
+  favorites-data:
+
+networks:
+  my_network:
+    driver: bridge
