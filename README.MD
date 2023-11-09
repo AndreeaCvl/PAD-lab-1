@@ -38,8 +38,8 @@ This will allow creating new products, deleting products by the seller, and sear
 They follow the standard HTTP methods, are compatible with the web infrastructure and the supports caching.
 
 ## Data management
-### User microservice
-**POST /add_product** - Adding a new product
+### Request
+**POST /add_product** - Adding a new product <br>
 Request Body:
 ```json
 {
@@ -59,8 +59,8 @@ Response Body:
     "price": 7
 }
 ```
-**GET /search_products?name=<name>** - search product by name
-Query Parameters - The name of the product to search for.
+**GET /search_products?name=<name>** - search product by name<br>
+Query Parameters - The name of the product to search for.<br>
 Response Body:
 ```json
 [
@@ -85,7 +85,7 @@ Response Body:
   // More matching products can be included here
 ]
 ```
-**GET /search_all_products** - get all available products
+**GET /search_all_products** - get all available products<br>
 Response Body:
 ```json
 [
@@ -111,7 +111,7 @@ Response Body:
 ]
 ```
 
-**POST /users/<user_id>/favorites/add** - add product to favorites
+**POST /users/<user_id>/favorites/add** - add product to favorites<br>
 Request Body:
 ```json
 {
@@ -123,13 +123,13 @@ Response body
 "Product with ID 7 <product_id> added to favorites for user ID: <user_id>"
 ```
 
-**GET /users/<user_id>/favorites** - add product to favorites
+**GET /users/<user_id>/favorites** - add product to favorites<br>
 Response body
 ```json
 "Favorites for User ID 6: <product_id>, <product_id>, ...."
 ```
 
-**DELETE delete_product/<product_id>** - delete product from sale
+**DELETE delete_product/<product_id>** - delete product from sale<br>
 Response Body:
 ```json
 "Product with ID e75e82fe-7971-4ca6-94c8-a93e131decf7 has been deleted successfully"
