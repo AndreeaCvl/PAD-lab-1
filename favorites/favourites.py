@@ -29,11 +29,12 @@ def add_to_favorites(user_id):
             response = session.post(f"http://localhost:5001/product_to_favorite", json={"product_id": product_id})
 
             if response.status_code == 200:
-                return jsonify({"message": f"Product {product_id} added to favorites for user {user_id}"}), 201
+                return jsonify({"message": f"Product {product_id} added to favorites for user {user_id} and the product service was notified"}), 201
                 print(" notified products service")
 
             else:
                 print("Failed to notify products service")
+                db_handler.remove_from_favorites(user_id, product_id)
                 return jsonify({"error": "Failed to notify products service"}), 500
 
             #return jsonify({'message': f'Product {product_id} added to favorites for User ID {user_id}'}), 200

@@ -50,5 +50,17 @@ class FavDatabaseHandler:
         self.conn.commit()
         cur.close()
 
+    def remove_from_favorites(self, user_id, product_id):
+        current_favorites = self.get_favorites_by_user_id(user_id)
+
+        if current_favorites is not None and product_id in current_favorites:
+            current_favorites.remove(product_id)
+
+            cur = self.conn.cursor()
+            cur.execute('UPDATE users SET favs = %s WHERE user_id = %s',
+                        (current_favorites, user_id))
+            self.conn.commit()
+            cur.close()
+
     def __del__(self):
         self.conn.close()

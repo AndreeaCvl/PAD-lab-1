@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/afex/hystrix-go/hystrix"
 	"github.com/gorilla/mux"
 )
 
@@ -35,28 +36,40 @@ func CreateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Send a POST request to the /add_product endpoint on localhost:5001
-	resp, err := http.Post("http://localhost:5001/add_product", "application/json", bytes.NewBuffer(responseJSON))
+	err = hystrix.Do("add_product", func() error {
+
+		// Send a POST request to the /add_product endpoint on localhost:5001
+		resp, err := http.Post("http://favorites-service:80/add_product", "application/json", bytes.NewBuffer(responseJSON))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		defer resp.Body.Close()
+
+		// Log the response status code and body
+		log.Printf("Response Status Code: %d", resp.StatusCode)
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatal(err)
+			return err
+		}
+		log.Printf("Response Body: %s", body)
+
+		p.ProductID = string(body)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated) // HTTP status code 201 for resource creation
+		json.NewEncoder(w).Encode(p)
+
+		return nil
+	}, nil)
+
 	if err != nil {
-		log.Fatal(err)
+		http.Error(w, "Failed to create product", http.StatusInternalServerError)
+		return
 	}
 
-	defer resp.Body.Close()
-
-	// Log the response status code and body
-	log.Printf("Response Status Code: %d", resp.StatusCode)
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Printf("Response Body: %s", body)
-
-	p.ProductID = string(body)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated) // HTTP status code 201 for resource creation
-	json.NewEncoder(w).Encode(p)
 }
 
 func DeleteProduct(w http.ResponseWriter, r *http.Request) {
@@ -69,86 +82,105 @@ func DeleteProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url := "http://localhost:5001/products/" + id // Replace 5001 with the appropriate port number of your Python server
+	err := hystrix.Do("delete_product", func() error {
+		url := "http://localhost:5001/products/" + id
 
-	req, err := http.NewRequest("DELETE", url, nil)
+		req, err := http.NewRequest("DELETE", url, nil)
+		if err != nil {
+			fmt.Println("Error creating DELETE request:", err)
+			return err
+		}
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			fmt.Println("Error sending DELETE request:", err)
+			return err
+		}
+		defer resp.Body.Close()
+
+		// Check the response status code
+		if resp.StatusCode != http.StatusOK {
+			fmt.Println("Error deleting product. Status Code:", resp.StatusCode)
+			return fmt.Errorf("Error deleting product")
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK) // HTTP status code 200 for successful deletion
+		fmt.Fprintf(w, "Product with ID %s has been deleted successfully", id)
+
+		return nil
+	}, nil)
+
 	if err != nil {
-		fmt.Println("Error creating DELETE request:", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, "Failed to delete product", http.StatusInternalServerError)
 		return
 	}
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println("Error sending DELETE request:", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-	defer resp.Body.Close()
-
-	// Check the response status code
-	if resp.StatusCode != http.StatusOK {
-		fmt.Println("Error deleting product. Status Code:", resp.StatusCode)
-		http.Error(w, "Error deleting product", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK) // HTTP status code 200 for successful deletion
-	fmt.Fprintf(w, "Product with ID %s has been deleted successfully", id)
 }
 
 func SearchProductByName(w http.ResponseWriter, r *http.Request) {
 	// Get the product name query parameter from the request
 	productName := r.URL.Query().Get("name")
 
-	// Send a GET request to the /products endpoint on localhost:5001
-	resp, err := http.Get("http://localhost:5001/products?name=" + productName)
+	err := hystrix.Do("search_product_by_name", func() error {
+		// Send a GET request to the /products endpoint on localhost:5001
+		resp, err := http.Get("http://localhost:5001/products?name=" + productName)
+		if err != nil {
+			fmt.Println("Error sending GET request:", err)
+			return err
+		}
+		defer resp.Body.Close()
+
+		// Read the response body
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println("Error reading response body:", err)
+			return err
+		}
+
+		// Set the response headers and write the response body to the client
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(resp.StatusCode)
+		w.Write(body)
+
+		return nil
+	}, nil)
+
 	if err != nil {
-		fmt.Println("Error sending GET request:", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, "Failed to search product by name", http.StatusInternalServerError)
 		return
 	}
-	defer resp.Body.Close()
-
-	// Read the response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Error reading response body:", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	// Set the response headers and write the response body to the client
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(resp.StatusCode)
-	w.Write(body)
 }
 
 func SearchAllProducts(w http.ResponseWriter, r *http.Request) {
+	err := hystrix.Do("search_all_products", func() error {
+		// Send a GET request to the /products endpoint on localhost:5001
+		resp, err := http.Get("http://localhost:5001/products")
+		if err != nil {
+			fmt.Println("Error sending GET request:", err)
+			return err
+		}
+		defer resp.Body.Close()
 
-	// Send a GET request to the /products endpoint on localhost:5001
-	resp, err := http.Get("http://localhost:5001/products")
+		// Read the response body
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println("Error reading response body:", err)
+			return err
+		}
+
+		// Set the response headers and write the response body to the client
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(resp.StatusCode)
+		w.Write(body)
+
+		return nil
+	}, nil)
+
 	if err != nil {
-		fmt.Println("Error sending GET request:", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, "Failed to search all products", http.StatusInternalServerError)
 		return
 	}
-	defer resp.Body.Close()
-
-	// Read the response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Error reading response body:", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	// Set the response headers and write the response body to the client
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(resp.StatusCode)
-	w.Write(body)
 }
 
 func AddToFavorites(w http.ResponseWriter, r *http.Request) {
@@ -185,26 +217,32 @@ func AddToFavorites(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Send a POST request to the specified endpoint
-	resp, err := http.Post(fmt.Sprintf("http://localhost:5000/users/%s/favorites/add", userID), "application/json", bytes.NewBuffer(requestJSON))
+	err = hystrix.Do("add_to_favorites", func() error {
+		// Send a POST request to the specified endpoint
+		resp, err := http.Post(fmt.Sprintf("http://localhost:5000/users/%s/favorites/add", userID), "application/json", bytes.NewBuffer(requestJSON))
+		if err != nil {
+			fmt.Println("Error sending POST request:", err)
+			return err
+		}
+		defer resp.Body.Close()
+
+		// Check the response status code
+		if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprintf(w, "Product with ID %s added to favorites for user ID: %s", productID, userID)
+		} else {
+			fmt.Println("Error adding product to favorites. Status Code:", resp.StatusCode)
+			return fmt.Errorf("Error adding product to favorites")
+		}
+
+		return nil
+	}, nil)
+
 	if err != nil {
-		fmt.Println("Error sending POST request:", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, "Failed to add product to favorites", http.StatusInternalServerError)
 		return
 	}
-	defer resp.Body.Close()
-
-	// Check the response status code
-	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "Product with ID %s added to favorites for user ID: %s", productID, userID)
-	} else {
-		fmt.Println("Error adding product to favorites. Status Code:", resp.StatusCode)
-		http.Error(w, "Error adding product to favorites", resp.StatusCode)
-		return
-	}
-
 }
 
 func SeeFavorites(w http.ResponseWriter, r *http.Request) {
@@ -217,27 +255,33 @@ func SeeFavorites(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := http.Get(fmt.Sprintf("http://localhost:5000/users/%s/favorites", userID))
+	err := hystrix.Do("see_favorites", func() error {
+		resp, err := http.Get(fmt.Sprintf("http://localhost:5000/users/%s/favorites", userID))
+		if err != nil {
+			fmt.Println("Error sending GET request:", err)
+			return err
+		}
+		defer resp.Body.Close()
+
+		// Read the response body
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println("Error reading response body:", err)
+			return err
+		}
+
+		// Set the response headers and write the response body to the client
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(resp.StatusCode)
+		w.Write(body)
+
+		return nil
+	}, nil)
+
 	if err != nil {
-		fmt.Println("Error sending GET request:", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, "Failed to see favorites", http.StatusInternalServerError)
 		return
 	}
-	defer resp.Body.Close()
-
-	// Read the response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Error reading response body:", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	// Set the response headers and write the response body to the client
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(resp.StatusCode)
-	w.Write(body)
-
 }
 
 func main() {
@@ -248,6 +292,20 @@ func main() {
 	r.HandleFunc("/search_all_products", SearchAllProducts)
 	r.HandleFunc("/users/{user_id}/favorites/add", AddToFavorites)
 	r.HandleFunc("/users/{user_id}/favorites", SeeFavorites)
+
+	commonHystrixConfig := hystrix.CommandConfig{
+		Timeout:               1000, // milliseconds
+		MaxConcurrentRequests: 10,
+		ErrorPercentThreshold: 25,
+	}
+
+	// Configure Hystrix for the "add_product" command
+	hystrix.ConfigureCommand("add_product", commonHystrixConfig)
+	hystrix.ConfigureCommand("search_product_by_name", commonHystrixConfig)
+	hystrix.ConfigureCommand("delete_product", commonHystrixConfig)
+	hystrix.ConfigureCommand("search_all_products", commonHystrixConfig)
+	hystrix.ConfigureCommand("add_to_favorites", commonHystrixConfig)
+	hystrix.ConfigureCommand("see_favorites", commonHystrixConfig)
 
 	err := http.ListenAndServe(":8000", r)
 	log.Fatal(err)
